@@ -9,6 +9,7 @@ const blogSchema = new mongoose.Schema({
 
 const Blog = mongoose.model('Blog', blogSchema)
 
+//Sobreescribe el metodo
 blogSchema.set('toJSON',{
     transform: (doc, returned)=>{
         returned.id = returned._id.toString()
