@@ -4,16 +4,17 @@ const mongoose = require('mongoose')
 
 const { blogs } = require("./blogs_helper");
 const Blog = require('../models/blog')
+const User = require('../models/user');
 
-const app = require('../app')
+const app = require('../app');
 const api = supertest(app)
 
 describe('api express api test', () => {
 
     beforeEach(async () => {
         await Blog.deleteMany({})
-        const blogsObjects = blogs.map(blog => new Blog(blog))
-        await Promise.all(blogsObjects.map(blog => blog.save()))
+        const usersObjects = blogs.map(blog => new Blog(blog))
+        await Promise.all(usersObjects.map(blog => blog.save()))
     })
 
     test('returns the correct amount of blog posts in the JSON format', async () => {
@@ -103,7 +104,7 @@ describe('api express api test', () => {
             __v: 0
         }
         const responseCreation = await api.post('/api/blogs').send(newBlog)
-        const updatedNote = await api.put('/api/blogs/'+responseCreation.body.id).send({...responseCreation.body,likes:responseCreation.body.likes+1})
+        const updatedNote = await api.put('/api/blogs/' + responseCreation.body.id).send({ ...responseCreation.body, likes: responseCreation.body.likes + 1 })
         expect(updatedNote.body).toEqual({
             id: "5a422a851b54a676234d13b2",
             title: "Express Test",
@@ -111,6 +112,40 @@ describe('api express api test', () => {
             url: "https://google.com/",
             likes: 8
         })
+    })
+
+    afterAll(async () => {
+        await mongoose.connection.close()
+    })
+
+})
+
+describe.only('User Tests', () => {
+
+    test('ensure invalid users are not created', async () => {
+        const newUserOne = {
+            "username": "LL",
+            "name": "Hellboy",
+            "password": "1234"
+        }
+
+        const responseOne = await api.post('/api/users').send(newUserOne).expect(400)
+        expect(responseOne.body.error).toBe("User validation failed: username: Path `username` (`LL`) is shorter than the minimum allowed length (3).")
+
+        const newUserTwo = {
+            "name": "Hellboy",
+            "password": "1234"
+        }
+
+        const responseTwo = await api.post('/api/users').send(newUserTwo).expect(400)
+        expect(responseTwo.body.error).toBe("User validation failed: username: Path `username` is required.")
+        const newUserThree = {
+            "username": "LL",
+            "name": "Hellboy"
+        }
+
+        const responseThree = await api.post('/api/users').send(newUserThree).expect(400)
+        expect(responseThree.body.msg).toBe("Password must be at least three characters long")
     })
 
     afterAll(async () => {
